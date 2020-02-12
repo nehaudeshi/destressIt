@@ -6,10 +6,20 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.destressit.R;
+import com.example.destressit.TherapistClass;
+import com.example.destressit.TherapistsViewHolder;
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 
 /**
@@ -26,11 +36,17 @@ public class TherapistsFragment extends Fragment {
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
+    private RecyclerView recyclerView;
+
+    private DatabaseReference databaseReference,ref;
+
+
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
     private OnFragmentInteractionListener mListener;
+    private View root;
 
     public TherapistsFragment() {
         // Required empty public constructor
@@ -61,13 +77,21 @@ public class TherapistsFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+
+        databaseReference= FirebaseDatabase.getInstance().getReference().child("therapists");
+        databaseReference.keepSynced(true);
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_therapists, container, false);
+        root = inflater.inflate(R.layout.fragment_therapists, container, false);
+        recyclerView=(RecyclerView)root.findViewById(R.id.myrecyclerview);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        return root;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -107,5 +131,47 @@ public class TherapistsFragment extends Fragment {
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        FirebaseRecyclerOptions<TherapistClass> options = new FirebaseRecyclerOptions.Builder<TherapistClass>()
+                .setQuery(databaseReference, TherapistClass.class)
+                .build();
+
+        FirebaseRecyclerAdapter<TherapistClass, TherapistsViewHolder> adapter = new FirebaseRecyclerAdapter<TherapistClass, TherapistsViewHolder>(options) {
+
+            @NonNull
+            @Override
+            public TherapistsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                Toast.makeText(getContext(),"Here1",Toast.LENGTH_SHORT).show();
+
+                View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.therapist_display_row, parent, false);
+                TherapistsViewHolder viewHolder = new TherapistsViewHolder(view);
+                return viewHolder;
+            }
+
+            @Override
+            protected void onBindViewHolder(@NonNull TherapistsViewHolder therapistsViewHolder, int i, @NonNull final TherapistClass therapist) {
+
+                Toast.makeText(getContext(),"Here",Toast.LENGTH_SHORT).show();
+
+                therapistsViewHolder.nameText.setText(therapist.getTname());
+                therapistsViewHolder.emailText.setText(therapist.getTemail());
+                therapistsViewHolder.phoneText.setText(therapist.getTphone());
+
+                therapistsViewHolder.requestApp.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(getContext(),"Clicked",Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+        };
+        recyclerView.setAdapter(adapter);
+        adapter.startListening();
     }
 }
